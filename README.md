@@ -12,9 +12,7 @@ Goal: Predict result of NBA Western Conference Finals (May 30)
 
 ## Overview
 
-This Databricks notebook builds a composite win probability model for Game 7 of the 2026 NBA Western Conference Finals. After the Spurs forced a winner-take-all game with a dominant 118–91 road win in Game 6, this analysis pulls live series data, applies a multi-factor model, and renders a five-panel analytics dashboard — all in pure Python.
-
-No API key required. No external services. Just `nba_api`, `pandas`, and `matplotlib`.
+This Databricks notebook builds a composite win probability model for Game 7 of the 2026 NBA Western Conference Finals. After the Spurs forced a winner-take-all game with a dominant 118–91 road win in Game 6, this analysis applies a multi-factor model and renders an analytics dashboard — all in pure Python with no API key required.
 
 ---
 
@@ -33,7 +31,7 @@ The dashboard includes:
 
 ## Model
 
-Win probability is computed as a weighted average of four components:
+Win probability is a weighted average of four components:
 
 | Component | Weight | Description |
 |---|---|---|
@@ -44,20 +42,17 @@ Win probability is computed as a weighted average of four components:
 
 **Result: OKC ~59% | SAS ~41%**
 
-The biggest swing variable is SGA's shooting — in games where he shoots 45%+, OKC is 4-0 in this series. In games where he's under 40%, SAS is 3-0.
-
 ---
 
-## Data Sources
+## Referee Record: Tony Brothers (Section 8)
 
-| Source | Method | Used For |
-|---|---|---|
-| `nba_api` / `stats.nba.com` | `PlayerGameLog` endpoint | Per-player WCF game logs & series averages |
-| NBA.com / ESPN | Hardcoded fallback (verified) | Series scores, player stats if API times out |
-| DraftKings Sportsbook | Hardcoded from live odds (5/28/26) | Moneyline-implied win probabilities |
-| Basketball Reference | Hardcoded from public record | All-time & conf finals Game 7 home/road splits |
+Section 8 displays OKC's playoff record in games officiated by Tony Brothers across the 2025 and 2026 postseasons (8 games, sourced from ESPN box scores).
 
-> `stats.nba.com` requires browser-like request headers and will time out or return 403s without them. The notebook handles this with a spoofed `User-Agent`, NBA-specific headers (`x-nba-stats-origin`, `x-nba-stats-token`), global timeout configuration via `NBAStatsHTTP.TIMEOUT`, and a 3-attempt retry loop with progressive backoff. If all retries fail, the notebook falls back to verified hardcoded series averages and continues without interruption.
+> ⚠️ **This is descriptive only and plays no role in the win probability model.**
+>
+> The 7-1 record is a raw observation, not a validated finding. It has not been tested for statistical significance and should not be interpreted as evidence of referee bias or causal effect. OKC is a dominant team that wins most of its playoff games regardless of who is officiating. Brothers is assigned to high-stakes games between strong teams, which inflates OKC's expected win rate in his games independent of any referee effect.
+>
+> A valid analysis would require a multivariate regression controlling for team quality, opponent strength, home/away context, and game stakes across a much larger sample — ideally several full seasons of regular season data. Foul differential or free throw disparity would be a more appropriate dependent variable than win/loss outcome. The record is shown here for interest only.
 
 ---
 
@@ -66,15 +61,16 @@ The biggest swing variable is SGA's shooting — in games where he shoots 45%+, 
 ```
 nba_game7_wcf_2026.py
 │
-├── Section 1 — Install & Import
-├── Section 2 — Configuration (CONFIG dict, team colors)
-├── Section 3 — nba_api game log fetch (with headers + retry logic)
-├── Section 4 — Series results & score margins
-├── Section 5 — Win probability model (4 components)
-├── Section 6 — Projected scorers & key narrative factors
-├── Section 7 — Matplotlib dashboard (5-panel figure)
-├── Section 8 — Delta table output (Spark write, optional)
-└── Section 9 — Summary & interpretation markdown
+├── Section 1  — Install & Import
+├── Section 2  — Configuration (CONFIG dict, team colors)
+├── Section 3  — Series player averages (hardcoded, NBA.com/ESPN verified)
+├── Section 4  — Series results & score margins
+├── Section 5  — Win probability model (4 components)
+├── Section 6  — Projected scorers & key narrative factors
+├── Section 7  — Matplotlib dashboard (5-panel figure)
+├── Section 8  — Tony Brothers record (descriptive only, see disclaimer above)
+├── Section 9  — Delta table output (Spark write, optional)
+└── Section 10 — Summary & interpretation markdown
 ```
 
 ---
@@ -82,7 +78,6 @@ nba_game7_wcf_2026.py
 ## Requirements
 
 ```
-nba_api
 requests
 pandas
 numpy
@@ -92,22 +87,20 @@ seaborn
 
 Install in Databricks:
 ```python
-%pip install nba_api requests pandas matplotlib seaborn
+%pip install requests pandas matplotlib seaborn
 dbutils.library.restartPython()
 ```
-
-For local use, install via pip normally and remove the `%pip` / `dbutils` lines. The `spark.createDataFrame` write in Section 8 is commented out and only relevant inside a Databricks environment.
 
 ---
 
 ## Key Storylines Encoded
 
-- **Wembanyama** averaging 28.2 pts / 11.8 reb / 3.0 blk in the series — historically elite for a conference finals big man
-- **SGA shooting slump** — 4 consecutive games under 40% FG, his longest cold stretch since the 2021-22 season
-- **OKC home court** — 6-1 at Paycom Center in the 2026 playoffs; all-time Game 7 home teams win 73.6%
+- **Wembanyama** averaging 28.2 pts / 11.8 reb / 3.0 blk in the series
+- **SGA shooting slump** — 4 consecutive games under 40% FG
+- **OKC home court** — 6-1 at Paycom Center in the 2026 playoffs; all-time G7 home win rate 73.6%
 - **Spurs road momentum** — won 4 of their last 5 road games, including a 27-point blowout in Game 6
-- **Jalen Williams healthy** — returned for Game 6 after missing Games 3–5 with a hamstring strain
-- **Stephon Castle** — 8th game this postseason with 15+ pts / 5+ reb / 5+ ast, a rookie record pace
+- **Jalen Williams healthy** — returned for Game 6 after missing Games 3–5
+- **Stephon Castle** — 8th game this postseason with 15+ pts / 5+ reb / 5+ ast
 
 ---
 
@@ -115,6 +108,4 @@ For local use, install via pip normally and remove the `%pip` / `dbutils` lines.
 
 This notebook is built for educational and portfolio purposes. Win probabilities are illustrative outputs of a simplified model — not financial advice, not betting recommendations.
 
----
-
-*Built with Python on Databricks | Data: nba_api, NBA.com, ESPN, DraftKings*
+*Built with Python on Databricks | Data: NBA.com, ESPN, DraftKings, Basketball Reference*
